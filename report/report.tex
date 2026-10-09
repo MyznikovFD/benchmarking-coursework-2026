@@ -1,0 +1,270 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue,
+    bookmarks=true,
+    bookmarksnumbered=true,
+    pdfstartview=FitH
+]{hyperref}
+\usepackage[left=2.5cm,right=2.5cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{indentfirst}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+\usepackage{enumitem}
+\usepackage{float}
+
+\title{Базовая реализация фреймворка для бенчмаркинга\\
+производительности и численного качества методов PySATL Core}
+\author{Мызников Фёдор Денисович}
+\date{Санкт-Петербург\\2026}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+{\small Санкт-Петербургский государственный университет \\
+Кафедра системного программирования}\\[1.5cm]
+
+{\large \textbf{Базовая реализация фреймворка для бенчмаркинга \\
+производительности и численного качества \\
+методов PySATL Core}}\\[0.8cm]
+
+{\normalsize Отчёт о прохождении учебной практики}\\[1.5cm]
+
+\begin{flushleft}
+Студент: \hfill Мызников Ф.Д. \\
+Научный руководитель: \hfill доц., к.ф.-м.н. Гориховский В.И. \\
+Консультант: \hfill Ёлкин Л.Н.
+\end{flushleft}
+
+\vfill
+{\normalsize Санкт-Петербург\\2026}
+\end{titlepage}
+\newpage
+
+\phantomsection
+\pdfbookmark[1]{Содержание}{toc}
+\tableofcontents
+\newpage
+
+\section{Введение}
+\label{sec:intro}
+PySATL Core содержит несколько реализаций для одних и тех же
+характеристик распределения, преобразования или генерации выборки.
+Модульные тесты подтверждают корректность контрактов, но не дают ответа
+о практическом качестве: такие реализации могут различаться по времени
+выполнения, потреблению памяти, численной точности и устойчивости
+вблизи хвостов, границ и особенностей плотности. Отсутствие единой
+методологии сравнения затрудняет обоснованный выбор метода и
+воспроизводимое сопоставление с внешними библиотеками.
+
+Внешние библиотеки вероятностных и численных методов (SciPy,
+NumPy random, UNU.RAN) предоставляют эквивалентную функциональность,
+однако их сопоставление с PySATL Core требует единого подхода к
+постановке сценариев, измерению характеристик и хранению результатов.
+Прямое сравнение «в лоб» некорректно из-за различий в параметризациях,
+соглашениях о носителе, семантике массивов и граничном поведении.
+
+Настоящая работа выполняется в рамках issue
+«Benchmarking framework for performance and numerical quality»
+и посвящена разработке базовой версии фреймворка, который делает
+такое сравнение воспроизводимым и интерпретируемым.
+\newpage
+
+\section{Цель и задачи}
+\label{sec:goals}
+
+\subsection*{Формальная цель}
+
+Разработать и реализовать базовую версию воспроизводимого фреймворка
+для сравнительного анализа производительности и численного качества
+нескольких реализаций одних и тех же характеристик в PySATL Core,
+а также для их сопоставления с внешними вероятностными и численными
+библиотеками при эквивалентности функциональности и совместимости
+лицензий.
+
+\subsection*{Задачи работы}
+
+Обзор литературы ведётся параллельно и не выделяется в отдельную
+задачу. Работа рассчитана на учебный год.
+
+\paragraph{Осень 2026.}
+\begin{enumerate}[label=\arabic*., leftmargin=*]
+
+  \item \textbf{Спроектировать контракты и архитектуру фреймворка.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Формат сценария бенчмарка.
+    \item Контракт адаптера библиотеки.
+    \item Контракт поставщика эталона.
+    \item Контракт сервиса измерений, включая раздельные
+          prepare/fit и evaluate и подключаемое измерение памяти.
+    \item Модель результата, набор статусов и метаданные окружения.
+  \end{enumerate}
+
+  \item \textbf{Реализовать минимальный вертикальный срез.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Один сценарий: Normal, операция \texttt{pdf}.
+    \item Минимальный раннер: загрузка, валидация, один прогон,
+          структурированное хранение результата.
+    \item Генерация отчёта по одному сценарию.
+  \end{enumerate}
+
+  \item \textbf{Реализовать поставщиков эталонов.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Аналитические формулы для Normal, Uniform, Exponential.
+    \item Статус валидности эталона.
+  \end{enumerate}
+
+  \item \textbf{Реализовать базовые метрики численного качества.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Абсолютная ошибка.
+    \item Логарифмическая относительная ошибка (LRE) с явной политикой
+          для нулевого эталона, антипереполнения и бесконечностей.
+  \end{enumerate}
+
+  \item \textbf{Реализовать smoke-режим фреймворка.}
+
+  \item \textbf{Расширить покрытие операций и распределений.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Операции \texttt{cdf}, функция выживания, \texttt{ppf},
+          моменты и \texttt{cf}.
+    \item Распределения ContinuousUniform и Exponential.
+    \item Распределение Лапласа (при наличии реализации).
+    \item Квадрат Uniform(0, 1) (при наличии реализации).
+  \end{enumerate}
+
+  \item \textbf{Реализовать продвинутые метрики.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Равномерная норма \(\lVert\cdot\rVert_\infty\) и поточечные
+          ошибки.
+    \item Квантильные метрики.
+    \item Развёртки сходимости по параметру численного метода.
+  \end{enumerate}
+
+  \item \textbf{Реализовать адаптер SciPy.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Сопоставление параметров, носителей и операций.
+    \item Первые сопоставимые сценарии Core-vs-SciPy.
+  \end{enumerate}
+
+\end{enumerate}
+
+\paragraph{Весна 2027.}
+\begin{enumerate}[label=\arabic*., leftmargin=*, start=9]
+
+  \item \textbf{Расширить набор сценариев.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Дискретные распределения (при наличии).
+    \item Сценарии с разрывами, особенностями и граничными случаями.
+  \end{enumerate}
+
+  \item \textbf{Реализовать сценарии сэмплирования через
+        преобразование интегральной вероятности.}
+
+  \item \textbf{Реализовать измерение памяти.}
+
+  \item \textbf{Обеспечить CI.}
+
+  \item \textbf{Подготовить отчёт и презентацию к защите.}
+
+\end{enumerate}
+
+\subsection*{Критерии успеха}
+
+\begin{itemize}
+  \item Фреймворк воспроизводим: одинаковый запуск при фиксированном
+        окружении даёт одинаковые выходные данные.
+  \item Сценарии Core-vs-Core выполняются через публичные API
+        PySATL Core и доходят до стадии отчёта.
+  \item Реализованные метрики численного качества корректно работают
+        в крайних случаях: при значениях, близких к нулю, на границах
+        носителя и в хвостах распределения, где относительные метрики
+        могут терять устойчивость.
+  \item Несопоставимые, неподдерживаемые и сбойные случаи получают
+        явный статус и не смешиваются с успешно измеренными.
+  \item Результаты и отчёты сохраняются в структурированном виде,
+        пригодном для последующего анализа и сравнения между запусками.
+\end{itemize}
+
+Расхождение измеренного значения с эталоном является результатом
+бенчмаркинга, а не дефектом фреймворка. Дефектом считается ситуация,
+когда сценарий не доходит до стадии отчёта из-за ошибки в самом
+фреймворке, а не из-за статуса тестируемой реализации.
+\newpage
+
+\section{Ожидаемые результаты}
+\label{sec:expected}
+По итогам работы предполагается получить:
+
+\begin{itemize}
+  \item спецификацию контрактов сценария, адаптера, эталона, измерения
+        и результата;
+  \item раннер, выполняющий сценарии Core-vs-Core через публичные API
+        PySATL Core и сохраняющий структурированные результаты
+        и отчёты;
+  \item набор начальных сценариев, покрывающих функциональные
+        и численные характеристики;
+  \item метрики численного качества: LRE, равномерную норму,
+        поточечные ошибки и квантильные метрики;
+  \item адаптер SciPy с документированными сопоставлениями и первые
+        сценарии Core-vs-SciPy;
+  \item сценарии непрерывного сэмплирования с проверкой через
+        преобразование интегральной вероятности;
+  \item раздельные измерения времени подготовки и оценки, а также
+        контракт подключаемого измерения памяти;
+  \item ручной CI workflow с артефактами.
+\end{itemize}
+\newpage
+
+\renewcommand{\refname}{Список литературы}
+\phantomsection
+\addcontentsline{toc}{section}{Список литературы}
+\label{sec:bibliography}
+\begin{thebibliography}{99}
+
+\bibitem{issue} Issue «Benchmarking framework for performance and
+numerical quality». ---
+URL: \url{https://github.com/PySATL/pysatl-core/issues/124}
+
+\bibitem{core_repo} PySATL Core. ---
+URL: \url{https://github.com/PySATL/pysatl-core}
+
+\bibitem{hormann2004} Hörmann W., Leydold J., Derflinger G.
+Automatic Nonuniform Random Variate Generation. ---
+Springer, Statistics and Computing, 2004.
+
+\bibitem{devroye1986} Devroye L.
+Non-Uniform Random Variate Generation. ---
+New York: Springer, 1986.
+
+\bibitem{nist_strd} NIST Statistical Reference Datasets. ---
+URL: \url{https://www.itl.nist.gov/div898/strd/}
+
+\bibitem{scipy_stats} SciPy documentation: \texttt{scipy.stats}. ---
+URL: \url{https://docs.scipy.org/doc/scipy/reference/stats.html}
+
+\bibitem{unuran} Leydold J., Hörmann W., Janka E., Tirler G.
+UNU.RAN User Manual. ---
+URL: \url{https://statmath.wu.ac.at/unuran/}
+
+\bibitem{mpmath} Johansson F. et al.
+mpmath: a Python library for arbitrary-precision floating-point
+arithmetic. --- URL: \url{https://mpmath.org/}
+
+\bibitem{gha_dispatch} GitHub Actions: \texttt{workflow\_dispatch}
+event. ---
+URL: \url{https://docs.github.com/en/actions}
+
+\end{thebibliography}
+
+\end{document}
