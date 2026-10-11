@@ -44,7 +44,7 @@
 \begin{flushleft}
 Студент: \hfill Мызников Ф.Д. \\
 Научный руководитель: \hfill доц., к.ф.-м.н. Гориховский В.И. \\
-Консультант: \hfill Ёлкин Л.Н.
+Консультанты: \hfill Ёлкин Л.Н., М. Михаил
 \end{flushleft}
 
 \vfill
@@ -68,15 +68,13 @@ PySATL Core содержит несколько реализаций для од
 методологии сравнения затрудняет обоснованный выбор метода и
 воспроизводимое сопоставление с внешними библиотеками.
 
-Внешние библиотеки вероятностных и численных методов (SciPy,
-NumPy random, UNU.RAN) предоставляют эквивалентную функциональность,
-однако их сопоставление с PySATL Core требует единого подхода к
-постановке сценариев, измерению характеристик и хранению результатов.
-Прямое сравнение «в лоб» некорректно из-за различий в параметризациях,
-соглашениях о носителе, семантике массивов и граничном поведении.
+Прямое сравнение реализаций «в лоб» некорректно из-за различий
+в параметризациях, соглашениях о носителе, семантике массивов
+и граничном поведении. Нужен единый подход к постановке сценариев,
+измерению характеристик и хранению результатов.
 
-Настоящая работа выполняется в рамках issue
-«Benchmarking framework for performance and numerical quality»
+Настоящая работа выполняется в рамках issue \#124 «Benchmarking
+framework for performance and numerical quality» \cite{issue_benchmark}
 и посвящена разработке базовой версии фреймворка, который делает
 такое сравнение воспроизводимым и интерпретируемым.
 \newpage
@@ -88,30 +86,52 @@ NumPy random, UNU.RAN) предоставляют эквивалентную ф�
 
 Разработать и реализовать базовую версию воспроизводимого фреймворка
 для сравнительного анализа производительности и численного качества
-нескольких реализаций одних и тех же характеристик в PySATL Core,
-а также для их сопоставления с внешними вероятностными и численными
-библиотеками при эквивалентности функциональности и совместимости
-лицензий.
+нескольких реализаций одних и тех же характеристик в PySATL Core.
 
 \subsection*{Задачи работы}
 
-Обзор литературы ведётся параллельно и не выделяется в отдельную
-задачу. Работа рассчитана на учебный год.
-
-\paragraph{Осень 2026.}
 \begin{enumerate}[label=\arabic*., leftmargin=*]
+
+  \item \textbf{Исследовать и сформировать матрицу сценариев.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Определить классы поведения плотности, покрываемые
+          сценариями.
+    \item Определить набор операций: \texttt{pdf}, \texttt{cdf},
+          \texttt{ppf}, моменты, \texttt{cf}.
+    \item Зафиксировать промежутки оценки для каждого распределения.
+    \item Составить начальную матрицу Core-vs-Core.
+  \end{enumerate}
 
   \item \textbf{Спроектировать контракты и архитектуру фреймворка.}
   \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Формат сценария бенчмарка.
+    \item Формат сценария бенчмарка, включая промежутки оценки
+          (основная область, граница, хвост).
     \item Контракт адаптера библиотеки.
     \item Контракт поставщика эталона.
     \item Контракт сервиса измерений, включая раздельные
           prepare/fit и evaluate и подключаемое измерение памяти.
-    \item Модель результата, набор статусов и метаданные окружения.
+    \item Модель результата и набор статусов.
   \end{enumerate}
 
-  \item \textbf{Реализовать минимальный вертикальный срез.}
+  \item \textbf{Реализовать поставщиков эталонов.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Высокоточные вычисления через mpmath — основной кандидат.
+    \item Аналитические формулы для Normal, Uniform, Exponential.
+    \item Аудит cdflib как альтернативного кандидата в поставщики
+          эталона CDF.
+    \item Статус валидности эталона.
+  \end{enumerate}
+
+  \item \textbf{Реализовать метрики численного качества.}
+  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
+    \item Логарифмическая относительная ошибка (LRE/NLRE) с явной
+          политикой для нулевого эталона, антипереполнения
+          и бесконечностей.
+    \item Равномерная норма \(\lVert\cdot\rVert_\infty\).
+    \item Поточечные ошибки в разбивке по промежуткам.
+  \end{enumerate}
+
+  \item \textbf{Реализовать минимальный рабочий прототип.}
   \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
     \item Один сценарий: Normal, операция \texttt{pdf}.
     \item Минимальный раннер: загрузка, валидация, один прогон,
@@ -119,61 +139,19 @@ NumPy random, UNU.RAN) предоставляют эквивалентную ф�
     \item Генерация отчёта по одному сценарию.
   \end{enumerate}
 
-  \item \textbf{Реализовать поставщиков эталонов.}
+  \item \textbf{Обеспечить воспроизводимость.}
   \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Аналитические формулы для Normal, Uniform, Exponential.
-    \item Статус валидности эталона.
+    \item Поддержка seed в сценариях и результатах.
+    \item Изучить интеграцию с Hydra (MIT) или ASV (BSD-3-Clause)
+          для отслеживания истории измерений.
   \end{enumerate}
 
-  \item \textbf{Реализовать базовые метрики численного качества.}
+  \item \textbf{Реализовать сценарии и smoke-режим фреймворка.}
   \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Абсолютная ошибка.
-    \item Логарифмическая относительная ошибка (LRE) с явной политикой
-          для нулевого эталона, антипереполнения и бесконечностей.
+    \item Реализовать сценарии из начальной матрицы Core-vs-Core.
+    \item Реализовать smoke-режим на минимальном наборе
+          сценариев.
   \end{enumerate}
-
-  \item \textbf{Реализовать smoke-режим фреймворка.}
-
-  \item \textbf{Расширить покрытие операций и распределений.}
-  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Операции \texttt{cdf}, функция выживания, \texttt{ppf},
-          моменты и \texttt{cf}.
-    \item Распределения ContinuousUniform и Exponential.
-    \item Распределение Лапласа (при наличии реализации).
-    \item Квадрат Uniform(0, 1) (при наличии реализации).
-  \end{enumerate}
-
-  \item \textbf{Реализовать продвинутые метрики.}
-  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Равномерная норма \(\lVert\cdot\rVert_\infty\) и поточечные
-          ошибки.
-    \item Квантильные метрики.
-    \item Развёртки сходимости по параметру численного метода.
-  \end{enumerate}
-
-  \item \textbf{Реализовать адаптер SciPy.}
-  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Сопоставление параметров, носителей и операций.
-    \item Первые сопоставимые сценарии Core-vs-SciPy.
-  \end{enumerate}
-
-\end{enumerate}
-
-\paragraph{Весна 2027.}
-\begin{enumerate}[label=\arabic*., leftmargin=*, start=9]
-
-  \item \textbf{Расширить набор сценариев.}
-  \begin{enumerate}[label=\arabic{enumi}.\arabic*., leftmargin=*]
-    \item Дискретные распределения (при наличии).
-    \item Сценарии с разрывами, особенностями и граничными случаями.
-  \end{enumerate}
-
-  \item \textbf{Реализовать сценарии сэмплирования через
-        преобразование интегральной вероятности.}
-
-  \item \textbf{Реализовать измерение памяти.}
-
-  \item \textbf{Обеспечить CI.}
 
   \item \textbf{Подготовить отчёт и презентацию к защите.}
 
@@ -183,7 +161,7 @@ NumPy random, UNU.RAN) предоставляют эквивалентную ф�
 
 \begin{itemize}
   \item Фреймворк воспроизводим: одинаковый запуск при фиксированном
-        окружении даёт одинаковые выходные данные.
+        seed даёт одинаковые выходные данные.
   \item Сценарии Core-vs-Core выполняются через публичные API
         PySATL Core и доходят до стадии отчёта.
   \item Реализованные метрики численного качества корректно работают
@@ -207,33 +185,50 @@ NumPy random, UNU.RAN) предоставляют эквивалентную ф�
 По итогам работы предполагается получить:
 
 \begin{itemize}
+  \item матрицу начальных сценариев, покрывающих функциональные
+        и численные характеристики, с разбивкой по промежуткам
+        оценки;
   \item спецификацию контрактов сценария, адаптера, эталона, измерения
         и результата;
-  \item раннер, выполняющий сценарии Core-vs-Core через публичные API
-        PySATL Core и сохраняющий структурированные результаты
-        и отчёты;
-  \item набор начальных сценариев, покрывающих функциональные
-        и численные характеристики;
-  \item метрики численного качества: LRE, равномерную норму,
-        поточечные ошибки и квантильные метрики;
-  \item адаптер SciPy с документированными сопоставлениями и первые
-        сценарии Core-vs-SciPy;
-  \item сценарии непрерывного сэмплирования с проверкой через
-        преобразование интегральной вероятности;
-  \item раздельные измерения времени подготовки и оценки, а также
-        контракт подключаемого измерения памяти;
-  \item ручной CI workflow с артефактами.
+  \item поставщиков эталонов на основе высокоточных вычислений через
+        mpmath и аналитических формул;
+  \item метрики численного качества: LRE/NLRE, равномерную норму
+        и поточечные ошибки;
+  \item рабочий прототип, выполняющий один сценарий Core-vs-Core
+        через публичные API PySATL Core и сохраняющий результаты
+        и отчёт;
+  \item поддержку seed для воспроизводимости результатов;
+  \item реализованные сценарии из начальной матрицы Core-vs-Core
+        и smoke-режим для быстрой проверки работоспособности
+        фреймворка;
+  \item отчёт и презентацию к защите.
 \end{itemize}
 \newpage
 
-\renewcommand{\refname}{Список литературы}
+\section{Перспективы развития}
+\label{sec:future}
+За рамками текущего семестра остаются следующие направления:
+
+\begin{itemize}
+  \item адаптер SciPy и сопоставление с внешними библиотеками;
+  \item расширение набора сценариев: дискретные распределения,
+        сценарии с разрывами и особенностями;
+  \item измерение памяти и раздельные тайминги prepare/fit и evaluate;
+  \item ручной CI workflow с артефактами и опциональная публикация
+        отчётов;
+  \item интеграция с Hydra или ASV для отслеживания истории
+        измерений между запусками.
+\end{itemize}
+\newpage
+
 \phantomsection
+\renewcommand{\refname}{Список литературы}
 \addcontentsline{toc}{section}{Список литературы}
 \label{sec:bibliography}
 \begin{thebibliography}{99}
 
-\bibitem{issue} Issue «Benchmarking framework for performance and
-numerical quality». ---
+\bibitem{issue_benchmark} Issue \#124 «Benchmarking framework for
+performance and numerical quality» в репозитории PySATL Core. ---
 URL: \url{https://github.com/PySATL/pysatl-core/issues/124}
 
 \bibitem{core_repo} PySATL Core. ---
@@ -250,20 +245,19 @@ New York: Springer, 1986.
 \bibitem{nist_strd} NIST Statistical Reference Datasets. ---
 URL: \url{https://www.itl.nist.gov/div898/strd/}
 
-\bibitem{scipy_stats} SciPy documentation: \texttt{scipy.stats}. ---
-URL: \url{https://docs.scipy.org/doc/scipy/reference/stats.html}
-
-\bibitem{unuran} Leydold J., Hörmann W., Janka E., Tirler G.
-UNU.RAN User Manual. ---
-URL: \url{https://statmath.wu.ac.at/unuran/}
-
 \bibitem{mpmath} Johansson F. et al.
 mpmath: a Python library for arbitrary-precision floating-point
 arithmetic. --- URL: \url{https://mpmath.org/}
 
-\bibitem{gha_dispatch} GitHub Actions: \texttt{workflow\_dispatch}
-event. ---
-URL: \url{https://docs.github.com/en/actions}
+\bibitem{cdflib} Brown B., Lovato J., Russell K.
+CDFLIB: Cumulative Distribution Function Library. ---
+URL: \url{https://people.sc.fsu.edu/~jburkardt/f_src/cdflib/cdflib.html}
+
+\bibitem{asv} Airspeed Velocity (ASV): a Python benchmarking tool. ---
+URL: \url{https://asv.readthedocs.io/}
+
+\bibitem{hydra} Hydra: a framework for elegantly configuring complex
+applications. --- URL: \url{https://hydra.cc/}
 
 \end{thebibliography}
 
