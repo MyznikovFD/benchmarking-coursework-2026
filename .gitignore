@@ -53,10 +53,8 @@ desktop.ini
 latexmkrc
 .latexmk
 
-# --- PDF (раскомментируйте, если НЕ хотите хранить собранный отчёт) ---
-# *.pdf
-# !presentations/*.pdf
-# !literature/*.pdf
+# --- PDF
+*.pdf
 
 # --- Редакторы и IDE ---
 .vscode/
